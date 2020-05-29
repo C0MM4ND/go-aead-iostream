@@ -6,6 +6,7 @@ import (
 	"crypto/cipher"
 	"crypto/sha256"
 	"io"
+	"io/ioutil"
 	"os"
 	"testing"
 
@@ -14,6 +15,8 @@ import (
 
 func TestAEADStream(t *testing.T) {
 	seed := hash([]byte("Hello"))
+	rawMessage := []byte("Package cipher implements standard block cipher modes that can be wrapped around low-level block cipher implementations. See https://csrc.nist.gov/groups/ST/toolkit/BCM/current_modes.html and NIST Special Publication 800-38A.")
+	chunkSize := 64
 
 	c1, err := aes.NewCipher(seed)
 	if err != nil {
@@ -33,27 +36,23 @@ func TestAEADStream(t *testing.T) {
 		panic(err)
 	}
 
-	f1, err := os.OpenFile("test", os.O_CREATE|os.O_WRONLY, 644)
+	// WRITE
+	f1, err := ioutil.TempFile(os.TempDir(), "")
 	if err != nil {
 		panic(err)
 	}
-
-	f2, err := os.Open("test")
-	if err != nil {
-		panic(err)
-	}
-
-	var chunkSize = 64
 
 	w := stream.NewStreamWriteCloser(seed, chunkSize, f1, aead2)
-
-	rawMessage := []byte("Package cipher implements standard block cipher modes that can be wrapped around low-level block cipher implementations. See https://csrc.nist.gov/groups/ST/toolkit/BCM/current_modes.html and NIST Special Publication 800-38A.")
-
 	w.Write(rawMessage)
 	w.Close()
 
-	r := stream.NewStreamReader(seed, chunkSize, f2, aead1)
+	// READ
+	f2, err := os.Open(f1.Name())
+	if err != nil {
+		panic(err)
+	}
 
+	r := stream.NewStreamReader(seed, chunkSize, f2, aead1)
 	buf := make([]byte, 2048)
 	dst := make([]byte, 0)
 	for {
