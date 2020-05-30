@@ -1,15 +1,16 @@
-package stream_test
+package aeads2conn_test
 
 import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/sha256"
 	"io"
 	"net"
 	"testing"
 	"time"
 
-	stream "github.com/maoxs2/go-aead-iostream"
+	aeadconn "github.com/maoxs2/go-aead-iostream/conn"
 )
 
 func TestCryptoConnStreamCome(t *testing.T) {
@@ -52,7 +53,7 @@ func TestCryptoConnStreamCome(t *testing.T) {
 				panic(err)
 			}
 
-			w := stream.NewCryptoConn(seed, chunkSize, conn, aead2)
+			w := aeadconn.NewAEADConn(seed, chunkSize, conn, aead2)
 			w.Write(rawMessage)
 			w.Close()
 		}
@@ -67,7 +68,7 @@ func TestCryptoConnStreamCome(t *testing.T) {
 			panic(err)
 		}
 
-		r := stream.NewCryptoConn(seed, chunkSize, conn, aead1)
+		r := aeadconn.NewAEADConn(seed, chunkSize, conn, aead1)
 		buf := make([]byte, 2048)
 		dst := make([]byte, 0)
 		for {
@@ -138,7 +139,7 @@ func TestCryptoConnStreamTo(t *testing.T) {
 				panic(err)
 			}
 
-			r := stream.NewCryptoConn(seed, chunkSize, conn, aead1)
+			r := aeadconn.NewAEADConn(seed, chunkSize, conn, aead1)
 			buf := make([]byte, 2)
 			dst := make([]byte, 0)
 			for {
@@ -174,7 +175,7 @@ func TestCryptoConnStreamTo(t *testing.T) {
 			panic(err)
 		}
 
-		w := stream.NewCryptoConn(seed, chunkSize, conn, aead2)
+		w := aeadconn.NewAEADConn(seed, chunkSize, conn, aead2)
 		w.Write(rawMessage)
 		w.Close()
 	}()
@@ -183,4 +184,9 @@ func TestCryptoConnStreamTo(t *testing.T) {
 	case <-passCh:
 		break
 	}
+}
+
+func hash(b []byte) []byte {
+	hash := sha256.Sum256(b)
+	return hash[:]
 }
