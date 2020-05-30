@@ -19,8 +19,8 @@ func NewCryptoConn(seed []byte, chunkSize int, conn net.Conn, aead cipher.AEAD) 
 	}
 }
 
-func (cc *CryptoConn) Close() {
-	cc.StreamWriteCloser.Close()
+func (cc *CryptoConn) Close() error {
+	return cc.StreamWriteCloser.Close()
 }
 
 func (cc *CryptoConn) Write(b []byte) (int, error) {

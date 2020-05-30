@@ -138,11 +138,11 @@ func TestCryptoConnStreamTo(t *testing.T) {
 				panic(err)
 			}
 
-			w := stream.NewCryptoConn(seed, chunkSize, conn, aead1)
+			r := stream.NewCryptoConn(seed, chunkSize, conn, aead1)
 			buf := make([]byte, 2)
 			dst := make([]byte, 0)
 			for {
-				n, err := w.Read(buf)
+				n, err := r.Read(buf)
 				if n > 0 {
 					dst = append(dst, buf[:n]...)
 				}
@@ -174,9 +174,9 @@ func TestCryptoConnStreamTo(t *testing.T) {
 			panic(err)
 		}
 
-		r := stream.NewCryptoConn(seed, chunkSize, conn, aead2)
-		r.Write(rawMessage)
-		r.Close()
+		w := stream.NewCryptoConn(seed, chunkSize, conn, aead2)
+		w.Write(rawMessage)
+		w.Close()
 	}()
 
 	select {
