@@ -2,6 +2,14 @@
 
 IO stream for [go std AEAD](https://godoc.org/crypto/cipher#AEAD)
 
+## Status
+
+[![Build Status](https://travis-ci.com/maoxs2/go-aead-iostream.svg?branch=master)](https://travis-ci.com/maoxs2/go-aead-iostream)
+
+## Conn example
+
+https://github.com/maoxs2/go-aead-compress-conn
+
 ## Example
 
 ```go
