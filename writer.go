@@ -33,10 +33,7 @@ func (w *StreamWriteCloser) Close() (err error) {
 	return w.w.Close()
 }
 
-func (w *StreamWriteCloser) Write(src []byte) (n int, err error) {
-	w.buf = append(w.buf, src...)
-	n = len(src)
-
+func (w *StreamWriteCloser) write() (n int, err error) {
 	chunk := make([]byte, (2+w.chunkSize)+w.aead.Overhead())
 	fullChunSizeBytes := packUint16LE(uint16(w.chunkSize))
 
@@ -61,5 +58,20 @@ func (w *StreamWriteCloser) Write(src []byte) (n int, err error) {
 		}
 	}
 
+	return
+}
+
+func (w *StreamWriteCloser) Write(src []byte) (n int, err error) {
+	w.buf = append(w.buf, src...)
+	n = len(src)
+
+	_, err = w.write()
+	return
+}
+
+func (w *StreamWriteCloser) WriteByte(c byte) (err error) {
+	w.buf = append(w.buf, c)
+
+	_, err = w.write()
 	return
 }

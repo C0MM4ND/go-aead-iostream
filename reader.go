@@ -46,6 +46,20 @@ func (r *StreamReader) Read(dst []byte) (n int, err error) {
 	return
 }
 
+func (r *StreamReader) ReadByte() (b byte, err error) {
+	if len(r.buf) > 0 {
+		b = r.buf[0]
+		r.buf = r.buf[1:]
+		return b, nil
+	}
+
+	_, err = r.read()
+	b = r.buf[0]
+	r.buf = r.buf[1:]
+
+	return
+}
+
 func (r *StreamReader) read() (n int, err error) {
 	chunk := make([]byte, (2+r.chunkSize)+r.aead.Overhead())
 	fullChunSizeBytes := packUint16LE(uint16(r.chunkSize))
