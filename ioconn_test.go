@@ -40,11 +40,12 @@ func TestAEADConnStream(t *testing.T) {
 
 	// WRITE
 
+	l, err := net.Listen("tcp", ":0")
+	if err != nil {
+		panic(err)
+	}
+
 	go func() {
-		l, err := net.Listen("tcp", "127.0.0.1:65535")
-		if err != nil {
-			panic(err)
-		}
 
 		for {
 			conn, err := l.Accept()
@@ -62,7 +63,7 @@ func TestAEADConnStream(t *testing.T) {
 	// READ
 	go func() {
 		time.Sleep(10)
-		conn, err := net.Dial("tcp", "127.0.0.1:65535")
+		conn, err := net.Dial("tcp", l.Addr().String())
 		if err != nil {
 			panic(err)
 		}
