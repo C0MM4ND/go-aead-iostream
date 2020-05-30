@@ -13,7 +13,7 @@ import (
 	stream "github.com/maoxs2/go-aead-iostream"
 )
 
-func TestAEADStream(t *testing.T) {
+func TestAEADFileStream(t *testing.T) {
 	seed := hash([]byte("Hello"))
 	rawMessage := []byte("Package cipher implements standard block cipher modes that can be wrapped around low-level block cipher implementations. See https://csrc.nist.gov/groups/ST/toolkit/BCM/current_modes.html and NIST Special Publication 800-38A.")
 	chunkSize := 64
@@ -76,7 +76,6 @@ func TestAEADStream(t *testing.T) {
 	}
 
 	f2.Close()
-	os.Remove("test")
 }
 
 func hash(b []byte) []byte {
