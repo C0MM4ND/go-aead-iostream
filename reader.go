@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/cipher"
 	"encoding/binary"
-	"fmt"
 	"io"
 )
 
@@ -75,7 +74,6 @@ func (r *StreamReader) read() (n int, err error) {
 	if l > 0 {
 		_, err = r.aead.Open(chunk[:0], r.seed, chunk, nil)
 		if err != nil {
-			fmt.Println(err)
 			return
 		}
 
