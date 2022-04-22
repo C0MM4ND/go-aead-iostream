@@ -62,10 +62,19 @@ func TestAEADConnStream(t *testing.T) {
 
 	// READ
 	go func() {
-		time.Sleep(10)
-		conn, err := net.Dial("tcp", l.Addr().String())
-		if err != nil {
-			panic(err)
+		var conn net.Conn
+		retry := 0
+		for {
+			conn, err = net.Dial("tcp", l.Addr().String())
+			if err == nil {
+				break
+			}
+			t.Log(err)
+			time.Sleep(1000)
+			if retry > 5 {
+				panic(err)
+			}
+			retry++
 		}
 
 		r := stream.NewStreamReader(seed, chunkSize, conn, aead1)
@@ -93,8 +102,5 @@ func TestAEADConnStream(t *testing.T) {
 		passCh <- struct{}{}
 	}()
 
-	select {
-	case <-passCh:
-		break
-	}
+	<-passCh
 }
