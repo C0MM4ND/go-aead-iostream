@@ -10,7 +10,7 @@ import (
 	"os"
 	"testing"
 
-	stream "github.com/maoxs2/go-aead-iostream"
+	stream "github.com/c0mm4nd/go-aead-iostream"
 )
 
 func TestAEADFileStream(t *testing.T) {
