@@ -1,3 +1,3 @@
-module github.com/c0mm4nd/go-aead-iostream
+module github.com/stweiz/go-aead-iostream
 
-go 1.14
+go 1.22.2

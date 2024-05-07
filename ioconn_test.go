@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	stream "github.com/c0mm4nd/go-aead-iostream"
+	stream "github.com/stweiz/go-aead-iostream"
 )
 
 func TestAEADConnStream(t *testing.T) {

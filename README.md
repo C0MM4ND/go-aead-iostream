@@ -1,6 +1,8 @@
 # go-aead-iostream
 
-IO stream for [go std AEAD](https://godoc.org/crypto/cipher#AEAD)
+This is a fork of the [implementation of c0mm4nd](https://github.com/c0mm4nd/go-aead-iostream).
+
+IO stream for [go std AEAD](https://godoc.org/crypto/cipher#AEAD).
 
 ## Conn example
 
@@ -18,7 +20,7 @@ import (
 	"os"
 	"log"
 
-	stream "github.com/c0mm4nd/go-aead-iostream"
+	stream "github.com/stweiz/go-aead-iostream"
 )
 
 func main() {
