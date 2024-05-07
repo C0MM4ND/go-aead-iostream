@@ -9,11 +9,11 @@ https://github.com/c0mm4nd/go-aead-conn
 ## Example
 
 ```go
+package main
+
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/sha256"
 	"io"
 	"os"
 	"log"
@@ -22,73 +22,133 @@ import (
 )
 
 func main() {
-    seed := hash([]byte("Hello"))
+	// replace with your key
+	seed := []byte("an arbitrary key")
+	pathToNewFile := "/tmp/initial_file"
+	pathToEncryptedFile := "/tmp/encrypted_file"
+	pathToDecryptedFile := "/tmp/decrypted_file"
 
-	c1, err := aes.NewCipher(seed)
-	if err != nil {
-		panic(err)
-	}
-	c2, err := aes.NewCipher(seed)
-	if err != nil {
-		panic(err)
-	}
-
-	aead1, err := cipher.NewGCM(c1)
-	if err != nil {
-		panic(err)
-	}
-	aead2, err := cipher.NewGCM(c2)
+	err := encryptNewFile(seed, pathToNewFile, pathToEncryptedFile)
 	if err != nil {
 		panic(err)
 	}
 
-	f1, err := os.OpenFile("test", os.O_CREATE|os.O_WRONLY, 644)
+	err = decryptExistingFile(seed, pathToDecryptedFile, pathToEncryptedFile)
 	if err != nil {
 		panic(err)
 	}
-
-	f2, err := os.Open("test")
-	if err != nil {
-		panic(err)
-	}
-
-	var chunkSize = 64
-
-	w := stream.NewStreamWriteCloser(seed, chunkSize, f1, aead2)
-
-	rawMessage := []byte("Package cipher implements standard block cipher modes that can be wrapped around low-level block cipher implementations. See https://csrc.nist.gov/groups/ST/toolkit/BCM/current_modes.html and NIST Special Publication 800-38A.")
-
-	w.Write(rawMessage)
-	w.Close()
-
-	r := stream.NewStreamReader(seed, chunkSize, f2, aead1)
-
-	buf := make([]byte, 2048)
-	dst := make([]byte, 0)
-	for {
-		n, err := r.Read(buf)
-		if n > 0 {
-			dst = append(dst, buf[:n]...)
-		}
-		if err != nil && err != io.EOF {
-			panic(err)
-		}
-		if err == io.EOF {
-			break
-		}
-
-	}
-
-	if !bytes.Equal(dst, rawMessage) {
-		log.Error("dst is %s, but raw is %s", dst, rawMessage)
-	} else {
-		log.Println("pass")
-	}
-
-	f2.Close()
-	os.Remove("test")
 }
 
+func encryptNewFile(seed []byte, pathToNewFile string, pathToEncryptedFile string) error {
+	// Prepare ciphers.
+	aesCipher, err := aes.NewCipher(seed)
+	if err != nil {
+		log.Print("Couldn't create AES cipher.")
+		log.Printf("Error: %s", err)
+		return err
+	}
+	aeadCipher, err := cipher.NewGCM(aesCipher)
+	if err != nil {
+		log.Print("Couldn't create AEAD cipher.")
+		log.Printf("Error: %s", err)
+		return err
+	}
 
+	// Create a new file and write some content into it.
+	initialFile, err := os.OpenFile(pathToNewFile, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("Couldn't create or open file. Path: %s", pathToNewFile)
+		log.Printf("Error: %s", err)
+		return err
+	}
+	defer initialFile.Close()
+	rawMessage := []byte("Package cipher implements standard block cipher modes that can be wrapped around low-level block cipher implementations. See https://csrc.nist.gov/groups/ST/toolkit/BCM/current_modes.html and NIST Special Publication 800-38A.")
+	initialFile.Write(rawMessage)
+	initialFile.Close()
+
+	// Reopen the new file for reading.
+	initialFile, err = os.OpenFile(pathToNewFile, os.O_RDONLY, 0644)
+	if err != nil {
+		log.Printf("Couldn't open file for reading. Path: %s", pathToNewFile)
+		log.Printf("Error: %s", err)
+		return err
+	}
+	defer initialFile.Close()
+
+	// Create an empty file, to which can be written later.
+	encryptedFile, err := os.OpenFile(pathToEncryptedFile, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("Couldn't create or open file. Path: %s", pathToEncryptedFile)
+		log.Printf("Error: %s", err)
+		return err
+	}
+	defer encryptedFile.Close()
+
+	// Create the StreamWriteCloser, which can be piped into any output.
+	chunkSize := 64
+	encryptedWriter := stream.NewStreamWriteCloser(seed, chunkSize, encryptedFile, aeadCipher)
+	defer encryptedWriter.Close()
+
+	// Create a buffer to hold the data in the specified chunk size.
+	buf := make([]byte, chunkSize)
+
+	// Use io.CopyBuffer to read from the unencrypted file stream and write to the encrypted stream.
+	if _, err := io.CopyBuffer(encryptedWriter, initialFile, buf); err != nil {
+		log.Printf("Couldn't write encrypted file. Path: %s", pathToEncryptedFile)
+		log.Printf("Error: %s", err)
+		return err
+	}
+
+	return nil
+}
+
+func decryptExistingFile(seed []byte, pathToDecryptedFile string, pathToEncryptedFile string) error {
+	// Prepare ciphers.
+	block, err := aes.NewCipher(seed)
+	if err != nil {
+		log.Print("Couldn't create AES cipher.")
+		log.Printf("Error: %s", err)
+		return err
+	}
+	aead, err := cipher.NewGCM(block)
+	if err != nil {
+		log.Print("Couldn't create AEAD cipher.")
+		log.Printf("Error: %s", err)
+		return err
+	}
+
+	// Open the encrypted file for reading.
+	encryptedFile, err := os.Open(pathToEncryptedFile)
+	if err != nil {
+		log.Printf("Couldn't create or open file. Path: %s", pathToEncryptedFile)
+		log.Printf("Error: %s", err)
+		return err
+	}
+	defer encryptedFile.Close()
+
+	// Create a new file to write the decrypted data to.
+	decryptedFile, err := os.Create(pathToDecryptedFile)
+	if err != nil {
+		log.Printf("Couldn't create or open file. Path: %s", pathToDecryptedFile)
+		log.Printf("Error: %s", err)
+		return err
+	}
+	defer decryptedFile.Close()
+
+	// Create the StreamReader, which can be piped into any output.
+	chunkSize := 64
+	r := stream.NewStreamReader(seed, chunkSize, encryptedFile, aead)
+
+	// Create a buffer to hold the data in the specified chunk size.
+	buf := make([]byte, 64)
+
+	// Use io.CopyBuffer to read from the encrypted file stream and write to the decrypted stream.
+	if _, err := io.CopyBuffer(decryptedFile, r, buf); err != nil {
+		log.Printf("Couldn't write encrypted file. Path: %s", pathToDecryptedFile)
+		log.Printf("Error: %s", err)
+		return err
+	}
+
+	return nil
+}
 ```
-
